@@ -90,18 +90,6 @@ http://localhost/course-registration-system/frontend/pages/login.html
 
 ---
 
-## 🔑 Default Login Credentials
-
-### Admin
-- **Username:** `admin`
-- **Password:** `admin123`
-
-### Student
-- **Email:** `aswin@icst.edu`
-- **Password:** `student123`
-
----
-
 ## 📁 Project Structure
 
 ```
