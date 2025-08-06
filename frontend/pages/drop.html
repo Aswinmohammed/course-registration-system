@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drop Course - ICST University</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ICST University</h1>
+            <h2>Drop Course</h2>
+        </header>
+
+        <nav>
+            <ul>
+                <!-- Navigation will be populated by auth.js based on user role -->
+            </ul>
+        </nav>
+
+        <main>
+            <div class="form-section">
+                <h3>Drop a Course</h3>
+                <form id="dropForm">
+                    <div class="form-group">
+                        <label for="studentSelect">Select Student:</label>
+                        <select id="studentSelect" required>
+                            <option value="">Choose a student...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="courseSelect">Select Course to Drop:</label>
+                        <select id="courseSelect" required disabled>
+                            <option value="">First select a student...</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger">Drop Course</button>
+                </form>
+            </div>
+
+            <div class="student-enrollments">
+                <h3>Current Enrollments</h3>
+                <div id="enrollmentsContainer">
+                    <p>Select a student to view their current enrollments.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Click 2 Entroll Project Team. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check authentication and require student role
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!auth.requireRole('student')) {
+                return;
+            }
+            
+            loadStudents();
+            
+            document.getElementById('studentSelect').addEventListener('change', handleStudentChange);
+            document.getElementById('dropForm').addEventListener('submit', handleDrop);
+        });
+
+        async function loadStudents() {
+            const currentUser = auth.getCurrentUser();
+            if (currentUser && currentUser.role === 'student') {
+                // For students, only show their own record
+                const select = document.getElementById('studentSelect');
+                const option = document.createElement('option');
+                option.value = currentUser.id;
+                option.textContent = `${currentUser.name} (${currentUser.department})`;
+                option.selected = true;
+                select.appendChild(option);
+                
+                // Trigger change event to load their enrollments
+                handleStudentChange({ target: { value: currentUser.id } });
+            } else {
+                // For admins, load all students (existing functionality)
+                try {
+                    const response = await fetch('../../backend/controllers/fetch_students.php');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const select = document.getElementById('studentSelect');
+                        data.data.forEach(student => {
+                            const option = document.createElement('option');
+                            option.value = student.id;
+                            option.textContent = `${student.name} (${student.department_name})`;
+                            select.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    showMessage('Error loading students: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function handleStudentChange(e) {
+            const studentId = e.target.value;
+            const courseSelect = document.getElementById('courseSelect');
+            
+            if (!studentId) {
+                courseSelect.disabled = true;
+                courseSelect.innerHTML = '<option value="">First select a student...</option>';
+                document.getElementById('enrollmentsContainer').innerHTML = '<p>Select a student to view their current enrollments.</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`../../backend/controllers/fetch_enrollments.php?student_id=${studentId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    populateCourseSelect(data.data);
+                    displayStudentEnrollments(data.data);
+                } else {
+                    showMessage('Error loading student enrollments: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error loading student enrollments: ' + error.message, 'error');
+            }
+        }
+
+        function populateCourseSelect(enrollments) {
+            const select = document.getElementById('courseSelect');
+            select.innerHTML = '';
+            
+            if (enrollments.length === 0) {
+                select.innerHTML = '<option value="">No courses enrolled</option>';
+                select.disabled = true;
+            } else {
+                select.innerHTML = '<option value="">Choose a course to drop...</option>';
+                enrollments.forEach(enrollment => {
+                    const option = document.createElement('option');
+                    option.value = enrollment.course_id;
+                    option.textContent = `${enrollment.course_code} - ${enrollment.course_name}`;
+                    select.appendChild(option);
+                });
+                select.disabled = false;
+            }
+        }
+
+        function displayStudentEnrollments(enrollments) {
+            const container = document.getElementById('enrollmentsContainer');
+            
+            if (enrollments.length === 0) {
+                container.innerHTML = '<p>This student is not enrolled in any courses.</p>';
+                return;
+            }
+            
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Department</th>
+                            <th>Registered Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            enrollments.forEach(enrollment => {
+                const registeredDate = new Date(enrollment.registered_at).toLocaleDateString();
+                tableHTML += `
+                    <tr>
+                        <td>${enrollment.course_code}</td>
+                        <td>${enrollment.course_name}</td>
+                        <td>${enrollment.department_name}</td>
+                        <td>${registeredDate}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        async function handleDrop(e) {
+            e.preventDefault();
+            
+            const studentId = document.getElementById('studentSelect').value;
+            const courseId = document.getElementById('courseSelect').value;
+            
+            if (!studentId || !courseId) {
+                showMessage('Please select both student and course', 'error');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to drop this course?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('../../backend/controllers/drop.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        student_id: parseInt(studentId),
+                        course_id: parseInt(courseId)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    // Reload student enrollments
+                    handleStudentChange({ target: { value: studentId } });
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error dropping course: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

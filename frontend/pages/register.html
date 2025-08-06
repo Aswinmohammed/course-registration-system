@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register for Course - ICST University</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ICST University</h1>
+            <h2>Course Registration</h2>
+        </header>
+
+        <nav>
+            <ul>
+                <!-- Navigation will be populated by auth.js based on user role -->
+            </ul>
+        </nav>
+
+        <main>
+            <div class="form-section">
+                <h3>Register for a Course</h3>
+                <form id="registrationForm">
+                    <div class="form-group">
+                        <label for="studentSelect">Select Student:</label>
+                        <select id="studentSelect" required>
+                            <option value="">Choose a student...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="courseSelect">Select Course:</label>
+                        <select id="courseSelect" required>
+                            <option value="">Choose a course...</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Register for Course</button>
+                </form>
+            </div>
+
+            <div class="available-courses">
+                <h3>Available Courses</h3>
+                <div id="coursesTable">
+                    <!-- Courses table will be loaded here -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Click 2 Entroll Project Team. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/app.js"></script>
+    <script>
+        // Check authentication and require student role
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!auth.requireRole('student')) {
+                return;
+            }
+            
+            loadStudents();
+            loadCourses();
+            
+            document.getElementById('registrationForm').addEventListener('submit', handleRegistration);
+        });
+
+        async function loadStudents() {
+            const currentUser = auth.getCurrentUser();
+            const select = document.getElementById('studentSelect');
+            select.innerHTML = '';
+
+            if (currentUser && currentUser.role === 'student') {
+                // Only show the logged-in student
+                const option = document.createElement('option');
+                option.value = currentUser.id;
+                option.textContent = `${currentUser.name} (${currentUser.department})`;
+                option.selected = true;
+                select.appendChild(option);
+                select.disabled = true; // Prevent changing student
+            } else {
+                // For admins, show all students
+                try {
+                    const response = await fetch('../../backend/controllers/fetch_students.php');
+                    const data = await response.json();
+                    if (data.success) {
+                        data.data.forEach(student => {
+                            const option = document.createElement('option');
+                            option.value = student.id;
+                            option.textContent = `${student.name} (${student.department_name})`;
+                            select.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    showMessage('Error loading students: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function loadCourses() {
+            try {
+                const response = await fetch('../../backend/controllers/fetch_courses.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    populateCourseSelect(data.data);
+                    displayCoursesTable(data.data);
+                }
+            } catch (error) {
+                showMessage('Error loading courses: ' + error.message, 'error');
+            }
+        }
+
+        function populateCourseSelect(courses) {
+            const select = document.getElementById('courseSelect');
+            courses.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course.id;
+                option.textContent = `${course.course_code} - ${course.name} (${course.available_seats} seats available)`;
+                option.disabled = course.available_seats <= 0;
+                select.appendChild(option);
+            });
+        }
+
+        function displayCoursesTable(courses) {
+            const container = document.getElementById('coursesTable');
+            
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Department</th>
+                            <th>Available Seats</th>
+                            <th>Total Seats</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            courses.forEach(course => {
+                const status = course.available_seats > 0 ? 'Available' : 'Full';
+                const statusClass = course.available_seats > 0 ? 'status-available' : 'status-full';
+                
+                tableHTML += `
+                    <tr>
+                        <td>${course.course_code}</td>
+                        <td>${course.name}</td>
+                        <td>${course.department_name}</td>
+                        <td>${course.available_seats}</td>
+                        <td>${course.seat_limit}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        async function handleRegistration(e) {
+            e.preventDefault();
+            
+            const studentId = document.getElementById('studentSelect').value;
+            const courseId = document.getElementById('courseSelect').value;
+            
+            if (!studentId || !courseId) {
+                showMessage('Please select both student and course', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('../../backend/controllers/register.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        student_id: parseInt(studentId),
+                        course_id: parseInt(courseId)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    document.getElementById('registrationForm').reset();
+                    // Reload courses to update available seats
+                    loadCourses();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error registering for course: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ICST University</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .login-header h1 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .role-selector {
+            display: flex;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+        }
+        
+        .role-option {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 1rem;
+        }
+        
+        .role-option.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .login-form {
+            margin-top: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .login-btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .demo-credentials {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .demo-credentials h4 {
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+        
+        .demo-credentials p {
+            margin: 0.25rem 0;
+            color: #666;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #f8d7da;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>ICST University</h1>
+            <p>Course Registration System</p>
+        </div>
+        
+        <div class="role-selector">
+            <button class="role-option active" data-role="admin">Admin</button>
+            <button class="role-option" data-role="student">Student</button>
+        </div>
+        
+        <form class="login-form" id="loginForm">
+            <div class="form-group">
+                <label for="username" id="usernameLabel">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit" class="login-btn" id="loginBtn">Login</button>
+            
+            <div class="error-message" id="errorMessage"></div>
+        </form>
+        
+        <!-- <div class="demo-credentials">
+            <h4>Demo Credentials:</h4>
+            <div id="adminCredentials">
+                <p><strong>Admin:</strong></p>
+                <p>Username: admin</p>
+                <p>Password: admin123</p>
+            </div>
+            <div id="studentCredentials" style="display: none;">
+                <p><strong>Student:</strong></p>
+                <p>Email: john.doe@icst.edu</p>
+                <p>Password: student123</p>
+            </div>
+        </div> -->
+    </div>
+
+    <script>
+        let currentRole = 'admin';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if already logged in
+            checkExistingSession();
+            
+            // Role selector functionality
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.role-option').forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    currentRole = this.dataset.role;
+                    updateFormForRole();
+                });
+            });
+            
+            // Login form submission
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        });
+        
+        function updateFormForRole() {
+            const usernameLabel = document.getElementById('usernameLabel');
+            const usernameInput = document.getElementById('username');
+            const adminCreds = document.getElementById('adminCredentials');
+            const studentCreds = document.getElementById('studentCredentials');
+            
+            if (currentRole === 'admin') {
+                usernameLabel.textContent = 'Username:';
+                usernameInput.placeholder = 'Enter admin username';
+                usernameInput.type = 'text';
+                adminCreds.style.display = 'block';
+                studentCreds.style.display = 'none';
+            } else {
+                usernameLabel.textContent = 'Email:';
+                usernameInput.placeholder = 'Enter student email';
+                usernameInput.type = 'email';
+                adminCreds.style.display = 'none';
+                studentCreds.style.display = 'block';
+            }
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Reset error message
+            errorMessage.style.display = 'none';
+            
+            // Disable button and show loading
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+            
+            try {
+                const response = await fetch('../../backend/controllers/auth.php?action=login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        userType: currentRole
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Store user info in localStorage
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // Redirect based on role
+                    if (data.user.role === 'admin') {
+                        window.location.href = 'index.html';
+                    } else {
+                        window.location.href = 'register.html';
+                    }
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Login failed. Please try again.');
+                console.error('Login error:', error);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        }
+        
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+        
+        async function checkExistingSession() {
+            try {
+                const response = await fetch('../../backend/controllers/auth.php?action=validate');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // User is already logged in, redirect
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    if (data.user.role === 'admin') {
+                        window.location.href = 'index.html';
+                    } else {
+                        window.location.href = 'register.html';
+                    }
+                }
+            } catch (error) {
+                // No existing session, stay on login page
+                console.log('No existing session');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICST University - Course Registration System</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ICST University</h1>
+            <h2>Course Registration Management System</h2>
+        </header>
+
+        <nav>
+            <ul>
+                <!-- Navigation will be populated by auth.js based on user role -->
+            </ul>
+        </nav>
+
+        <main>
+            <div class="welcome-section">
+                <h3>Welcome to the Course Registration System</h3>
+                <p>This system allows students to register for courses, drop courses, and view their current enrollments. Faculty and administrators can monitor course enrollments and view registration trends.</p>
+            </div>
+
+            <div class="stats-section">
+                <h3>System Overview</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Total Students</h4>
+                        <span id="totalStudents">Loading...</span>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Total Courses</h4>
+                        <span id="totalCourses">Loading...</span>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Active Registrations</h4>
+                        <span id="totalRegistrations">Loading...</span>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Departments</h4>
+                        <span id="totalDepartments">5</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="courses-section">
+                <h3>Available Courses</h3>
+                <div class="search-bar">
+                    <input type="text" id="courseSearch" placeholder="Search courses...">
+                </div>
+                <div id="coursesContainer" class="courses-grid">
+                    <!-- Courses will be loaded here -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Click 2 Entroll Project Team. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check authentication and require admin role
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!auth.requireRole('admin')) {
+                return;
+            }
+            
+            loadDashboardStats();
+            loadCourses();
+            
+            // Add search functionality
+            document.getElementById('courseSearch').addEventListener('input', function(e) {
+                filterCourses(e.target.value);
+            });
+        });
+
+        async function loadDashboardStats() {
+            try {
+                // Load students count
+                const studentsResponse = await fetch('../../backend/controllers/fetch_students.php');
+                const studentsData = await studentsResponse.json();
+                if (studentsData.success) {
+                    document.getElementById('totalStudents').textContent = studentsData.data.length;
+                }
+
+                // Load courses count
+                const coursesResponse = await fetch('../../backend/controllers/fetch_courses.php');
+                const coursesData = await coursesResponse.json();
+                if (coursesData.success) {
+                    document.getElementById('totalCourses').textContent = coursesData.data.length;
+                }
+
+                // Load registrations count
+                const enrollmentsResponse = await fetch('../../backend/controllers/fetch_enrollments.php');
+                const enrollmentsData = await enrollmentsResponse.json();
+                if (enrollmentsData.success) {
+                    document.getElementById('totalRegistrations').textContent = enrollmentsData.data.length;
+                }
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+
+        async function loadCourses() {
+            try {
+                const response = await fetch('../../backend/controllers/fetch_courses.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayCourses(data.data);
+                } else {
+                    showMessage('Error loading courses: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error loading courses: ' + error.message, 'error');
+            }
+        }
+
+        function displayCourses(courses) {
+            const container = document.getElementById('coursesContainer');
+            container.innerHTML = '';
+
+            courses.forEach(course => {
+                const courseCard = document.createElement('div');
+                courseCard.className = 'course-card';
+                courseCard.innerHTML = `
+                    <h4>${course.name}</h4>
+                    <p><strong>Code:</strong> ${course.course_code}</p>
+                    <p><strong>Department:</strong> ${course.department_name}</p>
+                    <p><strong>Available Seats:</strong> ${course.available_seats}/${course.seat_limit}</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${(course.enrolled_count / course.seat_limit) * 100}%"></div>
+                    </div>
+                `;
+                container.appendChild(courseCard);
+            });
+        }
+
+        function filterCourses(searchTerm) {
+            const courseCards = document.querySelectorAll('.course-card');
+            courseCards.forEach(card => {
+                const courseName = card.querySelector('h4').textContent.toLowerCase();
+                const courseCode = card.querySelector('p').textContent.toLowerCase();
+                
+                if (courseName.includes(searchTerm.toLowerCase()) || courseCode.includes(searchTerm.toLowerCase())) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

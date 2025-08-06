@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Enrollments - ICST University</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ICST University</h1>
+            <h2>View Enrollments</h2>
+        </header>
+
+        <nav>
+            <ul>
+                <!-- Navigation will be populated by auth.js based on user role -->
+            </ul>
+        </nav>
+
+        <main>
+            <div class="filter-section">
+                <h3>Filter Enrollments</h3>
+                <div class="filter-controls">
+                    <div class="form-group">
+                        <label for="viewType">View Type:</label>
+                        <select id="viewType">
+                            <option value="all">All Enrollments</option>
+                            <option value="by_student">By Student</option>
+                            <option value="by_course">By Course</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="studentSelectGroup" style="display: none;">
+                        <label for="studentSelect">Select Student:</label>
+                        <select id="studentSelect">
+                            <option value="">Choose a student...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="courseSelectGroup" style="display: none;">
+                        <label for="courseSelect">Select Course:</label>
+                        <select id="courseSelect">
+                            <option value="">Choose a course...</option>
+                        </select>
+                    </div>
+
+                    <button id="filterBtn" class="btn btn-primary">Apply Filter</button>
+                </div>
+            </div>
+
+            <div class="enrollments-section">
+                <h3 id="enrollmentsTitle">All Enrollments</h3>
+                <div class="search-bar">
+                    <input type="text" id="enrollmentSearch" placeholder="Search enrollments...">
+                </div>
+                <div id="enrollmentsContainer">
+                    <!-- Enrollments will be loaded here -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Click 2 Entroll Project Team. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        let currentEnrollments = [];
+
+        // Check authentication and require admin role
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!auth.requireRole('admin')) {
+                return;
+            }
+            
+            loadStudents();
+            loadCourses();
+            loadAllEnrollments();
+            
+            document.getElementById('viewType').addEventListener('change', handleViewTypeChange);
+            document.getElementById('filterBtn').addEventListener('click', handleFilter);
+            document.getElementById('enrollmentSearch').addEventListener('input', handleSearch);
+        });
+
+        async function loadStudents() {
+            try {
+                const response = await fetch('../../backend/controllers/fetch_students.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('studentSelect');
+                    data.data.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student.id;
+                        option.textContent = `${student.name} (${student.department_name})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                showMessage('Error loading students: ' + error.message, 'error');
+            }
+        }
+
+        async function loadCourses() {
+            try {
+                const response = await fetch('../../backend/controllers/fetch_courses.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('courseSelect');
+                    data.data.forEach(course => {
+                        const option = document.createElement('option');
+                        option.value = course.id;
+                        option.textContent = `${course.course_code} - ${course.name}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                showMessage('Error loading courses: ' + error.message, 'error');
+            }
+        }
+
+        function handleViewTypeChange(e) {
+            const viewType = e.target.value;
+            const studentGroup = document.getElementById('studentSelectGroup');
+            const courseGroup = document.getElementById('courseSelectGroup');
+            
+            studentGroup.style.display = viewType === 'by_student' ? 'block' : 'none';
+            courseGroup.style.display = viewType === 'by_course' ? 'block' : 'none';
+        }
+
+        async function handleFilter() {
+            const viewType = document.getElementById('viewType').value;
+            
+            switch (viewType) {
+                case 'all':
+                    await loadAllEnrollments();
+                    break;
+                case 'by_student':
+                    const studentId = document.getElementById('studentSelect').value;
+                    if (studentId) {
+                        await loadEnrollmentsByStudent(studentId);
+                    } else {
+                        showMessage('Please select a student', 'error');
+                    }
+                    break;
+                case 'by_course':
+                    const courseId = document.getElementById('courseSelect').value;
+                    if (courseId) {
+                        await loadEnrollmentsByCourse(courseId);
+                    } else {
+                        showMessage('Please select a course', 'error');
+                    }
+                    break;
+            }
+        }
+
+        async function loadAllEnrollments() {
+            try {
+                const response = await fetch('../../backend/controllers/fetch_enrollments.php');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentEnrollments = data.data;
+                    displayAllEnrollments(data.data);
+                    document.getElementById('enrollmentsTitle').textContent = `All Enrollments (${data.data.length})`;
+                } else {
+                    showMessage('Error loading enrollments: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error loading enrollments: ' + error.message, 'error');
+            }
+        }
+
+        async function loadEnrollmentsByStudent(studentId) {
+            try {
+                const response = await fetch(`../../backend/controllers/fetch_enrollments.php?student_id=${studentId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentEnrollments = data.data;
+                    displayStudentEnrollments(data.data);
+                    const studentName = document.getElementById('studentSelect').selectedOptions[0].textContent;
+                    document.getElementById('enrollmentsTitle').textContent = `Enrollments for ${studentName} (${data.data.length})`;
+                } else {
+                    showMessage('Error loading student enrollments: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error loading student enrollments: ' + error.message, 'error');
+            }
+        }
+
+        async function loadEnrollmentsByCourse(courseId) {
+            try {
+                const response = await fetch(`../../backend/controllers/fetch_enrollments.php?course_id=${courseId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentEnrollments = data.data;
+                    displayCourseEnrollments(data.data);
+                    const courseName = document.getElementById('courseSelect').selectedOptions[0].textContent;
+                    document.getElementById('enrollmentsTitle').textContent = `Students enrolled in ${courseName} (${data.data.length})`;
+                } else {
+                    showMessage('Error loading course enrollments: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error loading course enrollments: ' + error.message, 'error');
+            }
+        }
+
+        function displayAllEnrollments(enrollments) {
+            const container = document.getElementById('enrollmentsContainer');
+            
+            if (enrollments.length === 0) {
+                container.innerHTML = '<p>No enrollments found.</p>';
+                return;
+            }
+            
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Student Email</th>
+                            <th>Student Dept.</th>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Course Dept.</th>
+                            <th>Registered Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            enrollments.forEach(enrollment => {
+                const registeredDate = new Date(enrollment.registered_at).toLocaleDateString();
+                tableHTML += `
+                    <tr>
+                        <td>${enrollment.student_name}</td>
+                        <td>${enrollment.student_email}</td>
+                        <td>${enrollment.student_department}</td>
+                        <td>${enrollment.course_code}</td>
+                        <td>${enrollment.course_name}</td>
+                        <td>${enrollment.course_department}</td>
+                        <td>${registeredDate}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        function displayStudentEnrollments(enrollments) {
+            const container = document.getElementById('enrollmentsContainer');
+            
+            if (enrollments.length === 0) {
+                container.innerHTML = '<p>This student is not enrolled in any courses.</p>';
+                return;
+            }
+            
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Department</th>
+                            <th>Registered Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            enrollments.forEach(enrollment => {
+                const registeredDate = new Date(enrollment.registered_at).toLocaleDateString();
+                tableHTML += `
+                    <tr>
+                        <td>${enrollment.course_code}</td>
+                        <td>${enrollment.course_name}</td>
+                        <td>${enrollment.department_name}</td>
+                        <td>${registeredDate}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        function displayCourseEnrollments(enrollments) {
+            const container = document.getElementById('enrollmentsContainer');
+            
+            if (enrollments.length === 0) {
+                container.innerHTML = '<p>No students are enrolled in this course.</p>';
+                return;
+            }
+            
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Student Email</th>
+                            <th>Department</th>
+                            <th>Registered Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            enrollments.forEach(enrollment => {
+                const registeredDate = new Date(enrollment.registered_at).toLocaleDateString();
+                tableHTML += `
+                    <tr>
+                        <td>${enrollment.student_name}</td>
+                        <td>${enrollment.student_email}</td>
+                        <td>${enrollment.department_name}</td>
+                        <td>${registeredDate}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        function handleSearch(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#enrollmentsContainer table tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
