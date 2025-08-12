@@ -265,24 +265,15 @@ INSERT INTO departments (name) VALUES
 ('Data Science'),
 ('Cybersecurity');
 
--- Insert students
-INSERT INTO students (name, email, department_id) VALUES
-('John Doe', 'john.doe@icst.edu', 1),
-('Jane Smith', 'jane.smith@icst.edu', 1),
-('Mike Johnson', 'mike.johnson@icst.edu', 2),
-('Sarah Wilson', 'sarah.wilson@icst.edu', 2),
-('David Brown', 'david.brown@icst.edu', 3),
-('Lisa Davis', 'lisa.davis@icst.edu', 3),
-('Tom Miller', 'tom.miller@icst.edu', 4),
-('Amy Garcia', 'amy.garcia@icst.edu', 4),
-('Chris Martinez', 'chris.martinez@icst.edu', 5),
-('Emma Rodriguez', 'emma.rodriguez@icst.edu', 5);
 
 INSERT INTO students (name, email, department_id) VALUES
-('Ravi', 'ravie@icst.edu', 3);
-
-INSERT INTO students (name, email, department_id) VALUES
-('Aswin','aswin@gmail.com',4);
+('Aswin', 'aswin@icst.edu', 1),
+('Hazeem', 'hazeem@icst.edu', 1),
+('Nifra', 'nifra@icst.edu', 2),
+('Hilma', 'hilma@icst.edu', 2),
+('Anshaf', 'anshaf@icst.edu', 3),
+('Shihab', 'shihab@icst.edu', 3),
+('Afsan', 'afsan@icst.edu', 4);
 
 -- Insert courses
 INSERT INTO courses (name, course_code, department_id, seat_limit) VALUES
@@ -332,13 +323,8 @@ WHERE username = 'admin';
 
 ALTER TABLE students ADD COLUMN password VARCHAR(255) DEFAULT NULL;
 
-SELECT email, password, is_active FROM students WHERE email = 'aswin@gmail.com';
-
-SELECT email, password, is_active FROM students WHERE email = 'aswin@gmail.com';
 
 -- Create additional admin user for testing
-INSERT INTO admin_users (username, password, full_name, email) VALUES
-('admin2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Assistant Administrator', 'admin2@icst.edu');
 
 UPDATE students 
 SET password = '$2y$10$SizkBJ0g1ULW/D2kmQpYpODaaTi7FmT7dzSUPIfJnIcjfgZ947gxS';
@@ -359,6 +345,7 @@ SELECT
     (SELECT COUNT(*) FROM registrations) as Active_Registrations;
 
 -- Show sample course availability
+
 SELECT 
     c.course_code,
     c.name as course_name,
