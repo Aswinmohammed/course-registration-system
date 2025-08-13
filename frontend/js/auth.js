@@ -130,23 +130,11 @@ class AuthManager {
   }
 
   updateUserInfo() {
-    // Update header with user info
+    // Do nothing or just remove the .user-info if it exists
     const header = document.querySelector("header")
-    if (header && this.user) {
-      const userInfo = document.createElement("div")
-      userInfo.className = "user-info"
-      userInfo.innerHTML = `
-                <p>Welcome, ${this.user.role === "admin" ? this.user.full_name || this.user.username : this.user.name}</p>
-                <p>Role: ${this.user.role.charAt(0).toUpperCase() + this.user.role.slice(1)}</p>
-            `
-
-      // Remove existing user info
+    if (header) {
       const existingUserInfo = header.querySelector(".user-info")
-      if (existingUserInfo) {
-        existingUserInfo.remove()
-      }
-
-      header.appendChild(userInfo)
+      if (existingUserInfo) existingUserInfo.remove()
     }
   }
 
@@ -169,30 +157,60 @@ const auth = new AuthManager()
 // Add CSS for user info
 const style = document.createElement("style")
 style.textContent = `
-    .user-info {
-        position: absolute;
-        top: 1rem;
-        right: 2rem;
-        text-align: right;
-        color: white;
-        font-size: 0.9rem;
-    }
-    
-    .user-info p {
-        margin: 0.25rem 0;
-        opacity: 0.9;
-    }
-    
-    header {
-        position: relative;
-    }
-    
-    @media (max-width: 768px) {
-        .user-info {
-            position: static;
-            text-align: center;
-            margin-top: 1rem;
-        }
-    }
+    .welcome-popup {
+  position: fixed;
+  top: 2.5rem;
+  right: 5.2rem;
+  background: linear-gradient(90deg, #f8fafc 60%, #e3f0ff 100%);
+  border-radius: 1.2rem;
+  box-shadow: 0 4px 18px rgba(80,120,200,0.13), 0 1.5px 6px rgba(80,120,200,0.09);
+  padding: 1.1rem 2.2rem 1.1rem 1.7rem;
+  color: #222e3a;
+  font-size: 1.08rem;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  border: 1.5px solid #e0e6ed;
+  z-index: 9999;
+  min-width: 240px;
+  animation: fadeInUp 0.5s;
+}
+.welcome-popup .role-badge {
+  background: linear-gradient(90deg, #e0e7ff 60%, #c7f9cc 100%);
+  color: #256029;
+  display: inline-block;
+  padding: 0.22em 1.1em;
+  border-radius: 1em;
+  font-size: 0.99em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  box-shadow: 0 1px 4px rgba(80,120,200,0.07);
+  margin-top: 0.5em;
+  border: 1px solid #b6e4d6;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px);}
+  to { opacity: 1; transform: translateY(0);}
 `
 document.head.appendChild(style)
+
+// Show welcome popup
+function showWelcomePopup(user) {
+  // Remove existing popup if any
+  const existing = document.querySelector('.welcome-popup');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.className = 'welcome-popup';
+  popup.innerHTML = `
+    <div>
+      <p>Welcome, <strong>${user.role === "admin" ? user.full_name || user.username : user.name}</strong></p>
+      <span class="role-badge">Role: ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  // Auto-hide after 3 seconds
+  setTimeout(() => popup.remove(), 3000);
+}
+
+// Call this after successful login or page load
+if (auth.user) showWelcomePopup(auth.user)
