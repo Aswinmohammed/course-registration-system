@@ -452,6 +452,45 @@ footer {
   margin-top: auto;
 }
 
+/* Dynamic card design */
+.stats-grid {
+    display: flex;
+    gap: 1rem;
+    margin: 2rem 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 1.2rem 2rem;
+    min-width: 180px;
+    transition: box-shadow 0.2s;
+}
+.stat-card:hover {
+    box-shadow: 0 4px 16px rgba(80,120,200,0.13);
+}
+.stat-icon {
+    font-size: 2.5rem;
+    color: #2563eb;
+    margin-bottom: 0.5rem;
+}
+.stat-card h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #222e3a;
+}
+.stat-card span {
+    margin-top: 0.3rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2563eb;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {

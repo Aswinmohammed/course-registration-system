@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - ICST University</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="../css/styles.css">
     <style>
         .crud-section {
@@ -122,6 +123,7 @@
         .btn-delete:hover {
             background-color: #c82333;
         }
+        
     </style>
 </head>
 <body>
@@ -142,18 +144,22 @@
                 <h3>System Statistics</h3>
                 <div class="stats-grid">
                     <div class="stat-card">
+                        <i class="fa-solid fa-users stat-icon"></i>
                         <h4>Total Students</h4>
                         <span id="totalStudents">Loading...</span>
                     </div>
                     <div class="stat-card">
+                        <i class="fa-solid fa-book stat-icon"></i>
                         <h4>Total Courses</h4>
                         <span id="totalCourses">Loading...</span>
                     </div>
                     <div class="stat-card">
+                        <i class="fa-solid fa-clipboard-list stat-icon"></i>
                         <h4>Active Registrations</h4>
                         <span id="totalRegistrations">Loading...</span>
                     </div>
                     <div class="stat-card">
+                        <i class="fa-solid fa-building-columns stat-icon"></i>
                         <h4>Departments</h4>
                         <span id="totalDepartments">Loading...</span>
                     </div>
